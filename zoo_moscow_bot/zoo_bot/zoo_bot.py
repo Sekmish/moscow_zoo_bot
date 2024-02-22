@@ -1,16 +1,20 @@
 import telebot
 from telebot import types
-import psycopg2
-from config import TOKEN
+
+from config import TOKEN, DB
+
 
 bot = telebot.TeleBot(TOKEN)
 
-def init_questions():
-    conn = psycopg2.connect(database="m_zoo", user="pan", password="bd!!<FPF22lfyys[33", host="127.0.0.1", port="5432")
-    cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM questions")
-    questions_data = cursor.fetchall()
+connected = DB.connect()
+
+if not connected:
+    print("Unable to connect to the database.")
+    exit()
+def init_questions():
+    query = "SELECT * FROM questions"
+    questions_data = DB.execute_query(query)
 
     questions = []
     for question_data in questions_data:
@@ -19,8 +23,9 @@ def init_questions():
             "options": []
         }
 
-        cursor.execute("SELECT id, option_text, weights FROM options WHERE question_id = %s", (question_data[0],))
-        options_data = cursor.fetchall()
+        query = "SELECT id, option_text, weights FROM options WHERE question_id = %s"
+        params = (question_data[0],)
+        options_data = DB.execute_query(query, params)
 
         for option_data in options_data:
             option = {
@@ -33,24 +38,17 @@ def init_questions():
 
         questions.append(question)
 
-    conn.close()
-
     return questions
 
 def init_results():
-    conn = psycopg2.connect(database="m_zoo", user="pan", password="bd!!<FPF22lfyys[33", host="127.0.0.1", port="5432")
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT animal_name, result_text FROM results")
-    results_data = cursor.fetchall()
+    query = "SELECT animal_name, result_text FROM results"
+    results_data = DB.execute_query(query)
 
     results = {}
     for result_data in results_data:
         animal_name = result_data[0]
         result_text = result_data[1]
         results[animal_name] = result_text
-
-    conn.close()
 
     return results
 
@@ -87,7 +85,7 @@ def handle_start_help(message):
 def handle_quiz(call):
     global questions, points
     questions = init_questions()
-    points = {"Рысь": 0, "Медведь": 0, "Панда": 0, "Лев": 0, "Коала": 0, "Волк": 0}
+    points = {animal: 0 for animal in results.keys()}
     ask_question(0, call.message.chat.id, call.message.message_id)
 
 def ask_question(question_number, chat_id, message_id):
