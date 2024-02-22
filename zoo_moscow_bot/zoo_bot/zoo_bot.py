@@ -46,7 +46,9 @@ def init_results():
 
     results = {}
     for result_data in results_data:
-        results[result_data[0]] = result_data[1]
+        animal_name = result_data[0]
+        result_text = result_data[1]
+        results[animal_name] = result_text
 
     conn.close()
 
@@ -55,7 +57,6 @@ def init_results():
 questions = init_questions()
 results = init_results()
 
-points = {"Рысь": 0, "Медведь": 0, "Панда": 0, "Лев": 0, "Коала": 0, "Волк": 0}
 
 def update_points(answer, question_number):
     question_data = questions[question_number]

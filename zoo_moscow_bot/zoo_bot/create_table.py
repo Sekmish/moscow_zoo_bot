@@ -23,20 +23,19 @@ def create_tables():
         )
     """)
 
-    # Создание таблицы вариантов ответов
+
+    # Создание таблицы results
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS options (
+        CREATE TABLE IF NOT EXISTS results (
             id SERIAL PRIMARY KEY,
-            question_id INTEGER REFERENCES questions(id),
-            option_text TEXT NOT NULL,
-            weights JSONB NOT NULL
+            animal_name TEXT,
+            result_text TEXT
         )
     """)
 
-    # Удаление таблицы options, если она уже существует
-    cur.execute("DROP TABLE IF EXISTS options")
 
-    # Создание таблицы вариантов ответов с правильной схемой
+
+    # Создание таблицы вариантов ответов
     cur.execute("""
         CREATE TABLE IF NOT EXISTS options (
             id SERIAL PRIMARY KEY,
