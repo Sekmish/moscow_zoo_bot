@@ -1,4 +1,6 @@
+import requests
 import telebot
+import random
 from telebot import types
 
 from config import TOKEN, DB
@@ -41,6 +43,9 @@ def init_questions():
 
             questions.append(question)
 
+        # Перемешиваем список вопросов перед возвратом
+        random.shuffle(questions)
+
         return questions
     except Exception as e:
         print(f"Error in init_questions: {e}")
@@ -48,19 +53,21 @@ def init_questions():
 
 def init_results():
     try:
-        query = "SELECT animal_name, result_text FROM results"
+        query = "SELECT animal_name, result_text, image_url FROM results"
         results_data = DB.execute_query(query)
 
         results = {}
         for result_data in results_data:
             animal_name = result_data[0]
             result_text = result_data[1]
-            results[animal_name] = result_text
+            image_url = result_data[2]
+            results[animal_name] = {"text": result_text, "image_url": image_url}
 
         return results
     except Exception as e:
         print(f"Error in init_results: {e}")
         return {}
+
 
 questions = init_questions()
 results = init_results()
@@ -77,13 +84,26 @@ def update_points(answer, question_number):
     except Exception as e:
         print(f"Error in update_points: {e}")
 
+
 def show_result(chat_id, message_id):
     try:
         max_animal = max(points, key=points.get)
-        bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=f"Поздравляю! Ты - {max_animal}!\n{results.get(max_animal, '')}")
+        result_data = results.get(max_animal, {})
+        result_text = result_data.get("text", "")
+        image_url = result_data.get("image_url", "")
+
+        bot.send_message(chat_id, f"Поздравляю! Ваше тотемное животное - {max_animal}!\n{result_text}")
+
+        # Открываем файл с изображением для чтения в бинарном режиме
+        with open(image_url, 'rb') as photo:
+            # Отправляем изображение в чат
+            bot.send_photo(chat_id, photo)
+
         handle_end_quiz(chat_id)
     except Exception as e:
         print(f"Error in show_result: {e}")
+
+
 
 def handle_end_quiz(chat_id):
     try:
@@ -147,5 +167,7 @@ def handle_answer(call):
 if __name__ == '__main__':
     try:
         bot.polling()
+    except requests.exceptions.Timeout:
+        print("Timeout error while connecting to Telegram API.")
     except Exception as e:
         print(f"Error in main: {e}")
